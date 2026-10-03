@@ -145,3 +145,23 @@
 ::-webkit-scrollbar-track { background: #0a0a0a; }
 ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #f59e0b40; }
+
+@layer components {
+  .premium-card {
+    @apply rounded-2xl border border-dark-700 bg-dark-800/80 shadow-[0_12px_40px_rgba(0,0,0,0.18)] backdrop-blur-sm;
+    transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+  }
+  .premium-card:hover {
+    border-color: rgba(16, 185, 129, .14);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

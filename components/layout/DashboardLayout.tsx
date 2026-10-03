@@ -8,6 +8,7 @@ import {
   LayoutDashboard, TrendingUp, ArrowUpDown, Wallet,
   Bell, User, Settings, LogOut, Menu, X, ChevronRight,
   Shield, BarChart3, ArrowDownToLine,
+  LifeBuoy,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authService } from '@/lib/services'
@@ -21,6 +22,8 @@ const userNav = [
   { label: 'Transactions', href: '/transactions',  icon: BarChart3 },
   { label: 'Notifications',href: '/notifications', icon: Bell },
   { label: 'Profile',      href: '/profile',       icon: User },
+  { label: 'Support Tickets', href: '/support/tickets', icon: LifeBuoy },
+
 ]
 
 const adminNav = [

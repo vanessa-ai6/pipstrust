@@ -10,6 +10,7 @@ export interface User {
   country?: string
   avatar?: string
   is_verified: boolean
+  is_staff: boolean
   referral_code: string
   referral_count: number
   profile: UserProfile
@@ -20,6 +21,7 @@ export interface UserProfile {
   bitcoin_address?: string
   ethereum_address?: string
   usdt_address?: string
+  usdt_erc20_address?: string
   wallet_balance: number
   total_deposited: string
   total_withdrawn: string
@@ -80,7 +82,7 @@ export interface Withdrawal {
 
 export interface Transaction {
   id: string
-  type: 'deposit' | 'withdrawal' | 'roi' | 'referral_bonus'
+  type: 'deposit' | 'withdrawal' | 'roi' | 'referral_bonus' | 'investment'
   amount: string
   status: 'pending' | 'success' | 'failed'
   description: string
@@ -97,14 +99,34 @@ export interface Notification {
   created_at: string
 }
 
+export interface TicketMessage {
+  id: string
+  sender: 'user' | 'admin'
+  message: string
+  created_at: string
+}
+
+export interface SupportTicket {
+  id: string
+  subject: string
+  category: 'account' | 'deposit' | 'withdrawal' | 'investment' | 'other'
+  priority: 'low' | 'medium' | 'high'
+  status: 'open' | 'closed' | 'pending'
+  messages: TicketMessage[]
+  created_at: string
+  updated_at: string
+}
+
 export interface DashboardSummary {
   wallet_balance: number
   total_deposited: number
   total_withdrawn: number
   total_earned: number
+  total_invested: number
   active_investments: number
   completed_investments: number
   pending_deposits: number
+  pending_withdrawals: number
   referral_count: number
 }
 
@@ -189,6 +211,24 @@ export const withdrawalService = {
 
   cancelWithdrawal: (id: string) =>
     api.post(`/withdrawals/${id}/cancel/`),
+
+  resendOTP: (id: string) =>
+    api.post(`/withdrawals/${id}/resend-otp/`),
+}
+
+// ── Support ────────────────────────────────────────────────────────────────
+export const supportService = {
+  getTickets: (params?: { status?: string }) =>
+    api.get<ApiResponse<SupportTicket[]>>('/support/tickets/', { params }),
+  
+  createTicket: (data: { subject: string; category: SupportTicket['category']; priority: SupportTicket['priority']; message: string }) =>
+    api.post<ApiResponse<SupportTicket>>('/support/tickets/create/', data),
+
+  getTicket: (id: string) =>
+    api.get<ApiResponse<SupportTicket>>(`/support/tickets/${id}/`),
+
+  reply: (id: string, message: string ) =>
+    api.post<ApiResponse<TicketMessage>>(`/support/tickets/${id}/reply/`, { message}),
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -252,4 +292,10 @@ export const adminService = {
 
   broadcast: (data: { subject: string; message: string; target: string }) =>
     api.post('/admin/broadcast/', data),
+
+  getSupportTickets: (params?: any) =>
+    api.get('/admin/support-tickets/', { params }),
+
+  supportTicketAction: (id: string, data: {status?: 'open' | 'answered' | 'closed'; message?: string}) =>
+    api.post(`/support/admin/tickets/${id}/action/`, data),
 }

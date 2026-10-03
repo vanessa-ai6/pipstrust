@@ -1,12 +1,13 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { authService } from '@/lib/services'
 import { useAuthStore } from '@/lib/store'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import toast from 'react-hot-toast'
-import { Loader2, Copy, User, Wallet, KeyRound, Check } from 'lucide-react'
+import { Loader2, Copy, User, Wallet, KeyRound, Check, LifeBuoy, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export default function ProfilePage() {
   const qc = useQueryClient()
@@ -24,8 +25,20 @@ export default function ProfilePage() {
     bitcoin_address: me?.profile?.bitcoin_address || '',
     ethereum_address: me?.profile?.ethereum_address || '',
     usdt_address: me?.profile?.usdt_address || '',
+    usdt_erc20_address: me?.profile?.usdt_erc20_address || '',
   }})
   const passwordForm = useForm<{ old_password: string; new_password: string; new_password2: string }>()
+
+  useEffect(() => {
+    if (!me) return
+    profileForm.reset({ first_name: me.first_name, last_name: me.last_name, phone: me.phone, country: me.country })
+    walletForm.reset({
+      bitcoin_address: me?.profile?.bitcoin_address || '',
+      ethereum_address: me?.profile?.ethereum_address || '',
+      usdt_address: me?.profile?.usdt_address || '',
+      usdt_erc20_address: me?.profile?.usdt_erc20_address || '',
+    })
+  }, [me])
 
   const profileMutation = useMutation({
     mutationFn: (d: any) => authService.updateProfile(d),
@@ -74,6 +87,17 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      <Link href="/support/tickets" className="group mb-6 flex items-center justify-between gap-4 rounded-2xl border border-blue-500/15 bg-blue-500/[0.04] p-5 transition hover:border-blue-500/30 hover:bg-blue-500/[0.07]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400"><LifeBuoy size={19} /></div>
+          <div>
+            <p className="text-sm font-semibold text-white">Support Ticket</p>
+            <p className="mt-0.5 text-xs text-dark-400">Create and track support requests directly from your account.</p>
+          </div>
+        </div>
+        <ArrowRight size={18} className="text-dark-500 transition group-hover:translate-x-1 group-hover:text-blue-400" />
+      </Link>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-dark-800 border border-dark-700 p-1 rounded-xl w-fit">
@@ -132,25 +156,13 @@ export default function ProfilePage() {
               { field: 'bitcoin_address',  label: 'Bitcoin Address',  placeholder: 'bc1q...' },
               { field: 'ethereum_address', label: 'Ethereum Address', placeholder: '0x...' },
               { field: 'usdt_address',     label: 'USDT Address (TRC-20)', placeholder: 'T...' },
+              { field: 'usdt_erc20_address', label: 'USDT Address (ERC-20)', placeholder: '0x...' },
             ].map(({ field, label, placeholder }) => (
               <div key={field}>
                 <label className="block text-sm font-medium text-dark-200 mb-2">{label}</label>
                 <input {...walletForm.register(field as any)} placeholder={placeholder} className="input-gold w-full font-mono text-sm" />
               </div>
             ))}
-            {/* <div className="pt-2 border-t border-dark-700 space-y-4">
-              <p className="text-sm font-medium text-dark-300">Bank Transfer Details</p>
-              {[
-                { field: 'bank_name',           label: 'Bank Name',           placeholder: 'Access Bank' },
-                { field: 'bank_account_number', label: 'Account Number',      placeholder: '0123456789' },
-                { field: 'bank_account_name',   label: 'Account Name',        placeholder: 'John Doe' },
-              ].map(({ field, label, placeholder }) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">{label}</label>
-                  <input {...walletForm.register(field as any)} placeholder={placeholder} className="input-gold w-full" />
-                </div>
-              ))}
-            </div> */}
             <button type="submit" disabled={walletMutation.isPending}
               className="bg-gold-gradient text-dark-950 font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-60">
               {walletMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Save Addresses'}

@@ -7,10 +7,10 @@ import DashboardLayout from '@/components/layout/DashboardLayout'
 import toast from 'react-hot-toast'
 import {
   Users, Wallet, TrendingUp, ArrowUpDown, Clock, Loader2,
-  CheckCircle, XCircle, Shield, BarChart3, Megaphone, DollarSign,
+  CheckCircle, XCircle, Shield, BarChart3, Megaphone, DollarSign, LifeBuoy, Send
 } from 'lucide-react'
 
-type AdminTab = 'overview' | 'deposits' | 'withdrawals' | 'users' | 'plans' | 'broadcast'
+type AdminTab = 'overview' | 'deposits' | 'withdrawals' | 'users' | 'plans' | 'broadcast' | 'support'
 
 export default function AdminPage() {
   const qc = useQueryClient()
@@ -51,6 +51,13 @@ export default function AdminPage() {
     enabled: tab === 'plans',
   })
 
+  const { data: supportTickets } = useQuery({
+    queryKey: ['admin-support-tickets'],
+    queryFn: () => adminService.getSupportTickets().then(r => r.data.data),
+    enabled: tab === 'support',
+  })
+  const [supportReplies, setSupportReplies] = useState<Record<string, string>>({})
+
   const depositMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
       adminService.depositAction(id, { action }),
@@ -76,6 +83,16 @@ export default function AdminPage() {
     onSuccess: () => { toast.success('User status updated'); qc.invalidateQueries({ queryKey: ['admin-users'] }) },
   })
 
+  const supportMutation = useMutation({
+    mutationFn: ({ id, message, status}: {id: string; message?: string; status?: 'open' | 'answered' | 'closed'}) =>
+      adminService.supportTicketAction(id, { message, status }),
+    onSuccess: (_, vars) => {
+      toast.success(vars.message ? 'Support reply sent' : 'Support ticket status updated')
+      setSupportReplies(prev => ({ ...prev, [vars.id]: '' }))
+      qc.invalidateQueries({ queryKey: ['admin-support-tickets'] })
+    }
+  })
+  
   // Broadcast state
   const [broadcast, setBroadcast] = useState({ subject: '', message: '', target: 'all' })
   const broadcastMutation = useMutation({
@@ -89,6 +106,7 @@ export default function AdminPage() {
     { key: 'withdrawals', label: 'Withdrawals', icon: ArrowUpDown },
     { key: 'users',       label: 'Users',       icon: Users },
     { key: 'plans',       label: 'Plans',       icon: TrendingUp },
+    { key: 'support',     label: 'Support',     icon: LifeBuoy },
     { key: 'broadcast',   label: 'Broadcast',   icon: Megaphone },
   ]
 
@@ -296,6 +314,42 @@ export default function AdminPage() {
                 <div className="flex justify-between"><span className="text-dark-400">Min</span><span className="text-white">{formatCurrency(plan.min_amount)}</span></div>
                 {plan.max_amount && <div className="flex justify-between"><span className="text-dark-400">Max</span><span className="text-white">{formatCurrency(plan.max_amount)}</span></div>}
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Support */}
+      {tab === 'support' && (
+        <div className="space-y-4">
+          {!supportTickets?.length ? (
+            <div className="premium-card py-16 text-center text-dark-500">No support tickets</div>
+          ) : supportTickets.map((ticket: any) => (
+            <div key={ticket.id} className="premium-card p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-white">{ticket.subject}</h3>
+                    <span className={getStatusColor(ticket.status)}>{ticket.status}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-dark-400">{ticket.user_name} · {ticket.user_email} · {ticket.category} · {ticket.priority}</p>
+                </div>
+                <button onClick={() => supportMutation.mutate({ id: ticket.id, status: 'closed' })} disabled={supportMutation.isPending || ticket.status === 'closed'} className="text-xs font-semibold text-dark-400 hover:text-white disabled:opacity-40">Close ticket</button>
+              </div>
+              <div className="mt-4 max-h-52 space-y-2 overflow-y-auto rounded-xl border border-dark-700 bg-dark-900/50 p-3">
+                {ticket.messages?.map((message: any) => (
+                  <div key={message.id} className={`rounded-lg px-3 py-2 text-sm ${message.sender === 'admin' ? 'bg-blue-500/10 text-blue-100' : 'bg-dark-800 text-dark-200'}`}>
+                    <p>{message.message}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-dark-500">{message.sender}</p>
+                  </div>
+                ))}
+              </div>
+              {ticket.status !== 'closed' && (
+                <div className="mt-3 flex gap-2">
+                  <input value={supportReplies[ticket.id] || ''} onChange={e => setSupportReplies(prev => ({ ...prev, [ticket.id]: e.target.value }))} placeholder="Reply to this ticket..." className="input-gold flex-1" />
+                  <button onClick={() => { const message = (supportReplies[ticket.id] || '').trim(); if (message) supportMutation.mutate({ id: ticket.id, message }) }} disabled={supportMutation.isPending || !(supportReplies[ticket.id] || '').trim()} className="flex w-11 items-center justify-center rounded-xl bg-gold-gradient text-dark-950 disabled:opacity-50"><Send size={16} /></button>
+                </div>
+              )}
             </div>
           ))}
         </div>
