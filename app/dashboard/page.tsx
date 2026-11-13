@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import { 
+  AlertTriangle,
   ArrowDownToLine, 
   ArrowUpDown, 
   CheckCircle2,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { investmentService } from '@/lib/services'
+import { investmentService, notificationService } from '@/lib/services'
 import { useAuthStore } from '@/lib/store'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 
@@ -48,17 +49,37 @@ export default function DashboardPage() {
   const { data: transactions } = useQuery({
     queryKey: ['transactions-recent'],
     queryFn: () => investmentService.getTransactions().then(r => r.data.data!),
+    refetchInterval: 60_000,
+  })
+
+  // Lets the user see if account emails (deposit confirmed, etc.) are failing to reach them.
+  // Purely informational, so a failure here must never break the dashboard.
+  const { data: emailStatus } = useQuery({
+    queryKey: ['email-status'],
+    queryFn: () => notificationService.getEmailStatus().then(r => r.data.data!),
+    refetchInterval: 5 * 60_000,
+    retry: false,
   })
 
   const activeInvestments = (investments || []).filter(
     inv => inv.status === 'active' && Number(inv.progress_percentage) < 100
   )
 
+  const pendingDepositAmount = Number(summary?.pending_deposit_amount || 0)
+
   const stats = summary ? [
-    { label: 'Wallet Balance',    value: formatCurrency(summary.wallet_balance),   icon: Wallet,         tone: 'emerald' },
-    { label: 'Total Deposited',   value: formatCurrency(summary.total_deposited),  icon: ArrowDownToLine, tone: 'blue' },
-    { label: 'Total Earned',      value: formatCurrency(summary.total_earned),     icon: TrendingUp,     tone: 'emerald' },
-    { label: 'Total Withdrawn',   value: formatCurrency(summary.total_withdrawn),  icon: ArrowUpDown,    tone: 'violet' },
+    {
+      label: 'Wallet Balance',
+      value: formatCurrency(summary.wallet_balance),
+      icon: Wallet,
+      tone: 'emerald',
+      hint: pendingDepositAmount > 0
+        ? `${formatCurrency(pendingDepositAmount)} deposit awaiting approval`
+        : 'Available to invest or withdraw',
+    },
+    { label: 'Total Deposited',   value: formatCurrency(summary.total_deposited),  icon: ArrowDownToLine, tone: 'blue',    hint: 'Confirmed deposits' },
+    { label: 'Total Earned',      value: formatCurrency(summary.total_earned),     icon: TrendingUp,      tone: 'emerald', hint: 'Returns and bonuses' },
+    { label: 'Total Withdrawn',   value: formatCurrency(summary.total_withdrawn),  icon: ArrowUpDown,     tone: 'violet',  hint: 'Completed payouts' },
   ] : []
 
   const iconTone: Record<string, string> = {
@@ -87,15 +108,32 @@ export default function DashboardPage() {
           </div>
         </motion.section>
 
+        {!!emailStatus?.failed_count && (
+          <motion.section variants={item} className="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-400" />
+            <div className="text-sm">
+              <p className="font-semibold text-amber-200">
+                {emailStatus.failed_count} email{emailStatus.failed_count > 1 ? 's' : ''} could not be delivered to you
+              </p>
+              <p className="mt-0.5 text-xs text-amber-200/70">
+                Your balance and transactions are not affected, and everything is also shown here in your account.
+                If you expected an email, check your spam folder or{' '}
+                <Link href="/support/tickets" className="font-semibold underline">contact support</Link>.
+              </p>
+            </div>
+          </motion.section>
+        )}
+
         <motion.section variants={stagger} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {isLoading ? Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="premium-card h-36 animate-pulse" />
-          )) : stats.map(({ label, value, icon: Icon, tone }) => (
+          )) : stats.map(({ label, value, icon: Icon, tone, hint }) => (
             <motion.div key={label} variants={item} whileHover={{ y: -3 }} className="premium-card group p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-dark-400">{label}</p>
                   <p className="mt-5 text-2xl font-bold tracking-tight text-white">{value}</p>
+                  <p className={`mt-1 text-[11px] ${label === 'Wallet Balance' && pendingDepositAmount > 0 ? 'text-amber-300' : 'text-dark-500'}`}>{hint}</p>
                 </div>
                 <div className={`flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${iconTone[tone]}`}>
                   <Icon size={20} />
@@ -108,16 +146,19 @@ export default function DashboardPage() {
         {summary && (
           <motion.section variants={item} className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {[
-              { label: 'Active', value: summary.active_investments, icon: TrendingUp, href: '/investments' },
-              { label: 'Completed', value: summary.completed_investments, icon: CheckCircle2, href: '/investments' },
-              { label: 'Pending deposits', value: summary.pending_deposits, icon: Clock3, href: '/deposits' },
-              { label: 'Pending withdrawals', value: summary.pending_withdrawals, icon: ArrowUpDown, href: '/withdrawals' },
-              { label: 'Referrals', value: summary.referral_count, icon: Users, href: '/profile' },
-            ].map(({ label, value, icon: Icon, href }) => (
+              { label: 'Active', value: summary.active_investments, icon: TrendingUp, href: '/investments', meta: null },
+              { label: 'Completed', value: summary.completed_investments, icon: CheckCircle2, href: '/investments', meta: null },
+              { label: 'Pending deposits', value: summary.pending_deposits, icon: Clock3, href: '/deposits', meta: summary.pending_deposit_amount },
+              { label: 'Pending withdrawals', value: summary.pending_withdrawals, icon: ArrowUpDown, href: '/withdrawals', meta: null },
+              { label: 'Referrals', value: summary.referral_count, icon: Users, href: '/profile', meta: null },
+            ].map(({ label, value, icon: Icon, href, meta }) => (
               <Link key={label} href={href} className="group rounded-2xl border border-dark-700 bg-dark-800/70 p-4 transition hover:border-emerald-500/20 hover:bg-dark-800">
                 <Icon size={17} className="text-dark-400 transition group-hover:text-emerald-400" />
                 <p className="mt-3 text-2xl font-bold text-white">{value}</p>
                 <p className="mt-1 text-xs text-dark-400">{label}</p>
+                {meta !== null && meta !== undefined && Number(meta) > 0 && (
+                  <p className="mt-1 text-[11px] text-amber-300">{formatCurrency(meta)} awaiting approval</p>
+                )}
               </Link>
             ))}
           </motion.section>
@@ -178,7 +219,7 @@ export default function DashboardPage() {
                   <div key={tx.id} className="flex items-center justify-between gap-4 px-5 py-4 lg:px-6">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium capitalize text-white">{tx.type.replace('_', ' ')}</p>
+                        <p className="truncate text-sm font-medium capitalize text-white">{tx.type.replace(/_/g, ' ')}</p>
                         <span className={getStatusColor(tx.status)}>{tx.status}</span>
                       </div>
                       <p className="mt-1 text-xs text-dark-500">{formatDate(tx.created_at)}</p>

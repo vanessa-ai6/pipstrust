@@ -19,6 +19,9 @@ const categories = [
   ['other', 'Other'],
 ] as const
 
+// The backend rejects messages shorter than 2 characters.
+const MIN_MESSAGE_LENGTH = 2
+
 export default function SupportTicketsPage() {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
@@ -39,10 +42,12 @@ export default function SupportTicketsPage() {
   const createMutation = useMutation({
     mutationFn: supportService.createTicket,
     onSuccess: res => {
-      toast.success('Support ticket created.')
+      toast.success('Support ticket created. We have emailed you a confirmation.')
       setShowCreate(false)
       setSubject('')
       setMessage('')
+      setCategory('withdrawal')
+      setPriority('normal')
       setSelectedId(res.data.data!.id)
       qc.invalidateQueries({ queryKey: ['support-tickets'] })
     },
@@ -57,11 +62,17 @@ export default function SupportTicketsPage() {
     },
   })
 
-  const statusClass: Record<string, string> = {
+  const statusClass: Record<SupportTicket['status'], string> = {
     open: 'badge-pending',
     answered: 'badge-info',
     closed: 'badge-success',
   }
+
+  const canReply = reply.trim().length >= MIN_MESSAGE_LENGTH && !replyMutation.isPending
+  const canCreate =
+    subject.trim().length > 0 &&
+    message.trim().length >= MIN_MESSAGE_LENGTH &&
+    !createMutation.isPending
 
   return (
     <DashboardLayout>
@@ -143,7 +154,7 @@ export default function SupportTicketsPage() {
                   ) : (
                     <div className="flex gap-2">
                       <textarea value={reply} onChange={e => setReply(e.target.value)} rows={2} placeholder="Write a reply..." className="input-gold min-h-[52px] flex-1 resize-none" />
-                      <button onClick={() => selected && reply.trim() && replyMutation.mutate({ id: selected.id, message: reply.trim() })} disabled={!reply.trim() || replyMutation.isPending} className="flex w-12 items-center justify-center rounded-xl bg-gold-gradient text-dark-950 disabled:opacity-50">
+                      <button onClick={() => canReply && replyMutation.mutate({ id: selected.id, message: reply.trim() })} disabled={!canReply} className="flex w-12 items-center justify-center rounded-xl bg-gold-gradient text-dark-950 disabled:opacity-50">
                         {replyMutation.isPending ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
                       </button>
                     </div>
@@ -170,7 +181,7 @@ export default function SupportTicketsPage() {
               <div className="mt-6 space-y-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-dark-200">Subject</label>
-                  <input value={subject} onChange={e => setSubject(e.target.value)} className="input-gold w-full" placeholder="Example: Withdrawal is still pending" />
+                  <input value={subject} onChange={e => setSubject(e.target.value)} maxLength={200} className="input-gold w-full" placeholder="Example: Withdrawal is still pending" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -192,7 +203,7 @@ export default function SupportTicketsPage() {
                   <label className="mb-2 block text-sm font-medium text-dark-200">Message</label>
                   <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5} className="input-gold w-full resize-none" placeholder="Describe what happened, including any relevant transaction details." />
                 </div>
-                <button onClick={() => createMutation.mutate({ subject: subject.trim(), category, priority, message: message.trim() })} disabled={!subject.trim() || !message.trim() || createMutation.isPending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold-gradient py-3.5 font-bold text-dark-950 disabled:opacity-50">
+                <button onClick={() => canCreate && createMutation.mutate({ subject: subject.trim(), category, priority, message: message.trim() })} disabled={!canCreate} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gold-gradient py-3.5 font-bold text-dark-950 disabled:opacity-50">
                   {createMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <><Clock3 size={17} /> Create ticket</>}
                 </button>
               </div>

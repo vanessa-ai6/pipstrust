@@ -65,5 +65,3 @@ export default function LandingPage() {
     </main>
   )
 }
-
-"min-h-screen bg-dark-950 text-white"

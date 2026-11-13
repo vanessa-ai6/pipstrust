@@ -63,10 +63,10 @@ function HeroSection({ isPreloaderDone = false }: HeroSectionProps) {
               Start Investing Today
               <ArrowRight size={18} />
             </Link>
-            <a href="#plans" className="inline-flex items-center gap-2 bg-dark-800 border border-dark-600 text-white px-8 py-4 rounded-xl hover:border-gold-500/40 transition-all text-base">
+            <Link href="/plans" className="inline-flex items-center gap-2 bg-dark-800 border border-dark-600 text-white px-8 py-4 rounded-xl hover:border-gold-500/40 transition-all text-base">
               View Plans
               <ChevronDown size={18} />
-            </a>
+            </Link>
           </div>
         </motion.div>
 

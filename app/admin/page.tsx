@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { adminService } from '@/lib/services'
 import { formatCurrency, formatDate, getStatusColor } from '@/lib/utils'
 import DashboardLayout from '@/components/layout/DashboardLayout'
+import EmailHealthPanel from '@/components/admin/EmailHealthPanel'
 import toast from 'react-hot-toast'
 import {
   Users, Wallet, TrendingUp, ArrowUpDown, Clock, Loader2,
-  CheckCircle, XCircle, Shield, BarChart3, Megaphone, DollarSign, LifeBuoy, Send
+  CheckCircle, XCircle, Shield, BarChart3, Megaphone, DollarSign, LifeBuoy, Send, Mail, AlertTriangle
 } from 'lucide-react'
 
-type AdminTab = 'overview' | 'deposits' | 'withdrawals' | 'users' | 'plans' | 'broadcast' | 'support'
+type AdminTab = 'overview' | 'deposits' | 'withdrawals' | 'users' | 'plans' | 'broadcast' | 'support' | 'email'
 
 export default function AdminPage() {
   const qc = useQueryClient()
@@ -58,23 +59,43 @@ export default function AdminPage() {
   })
   const [supportReplies, setSupportReplies] = useState<Record<string, string>>({})
 
+  // Email health: always loaded (not only on the Email tab) so a problem is visible from any tab.
+  // retry:false so an older backend without the endpoint simply shows nothing.
+  const { data: emailHealth } = useQuery({
+    queryKey: ['admin-email-summary'],
+    queryFn: () => adminService.getEmailLogs({ status: 'failed', limit: 1 }).then(r => r.data.data!),
+    refetchInterval: 60_000,
+    retry: false,
+  })
+  const failedEmails = emailHealth?.summary.failed_24h ?? 0
+  const emailWarnings = emailHealth?.config.warnings ?? []
+  const emailNeedsAttention = failedEmails > 0 || emailWarnings.length > 0
+  const refreshEmailHealth = () => {
+    qc.invalidateQueries({ queryKey: ['admin-email-logs'] })
+    qc.invalidateQueries({ queryKey: ['admin-email-summary'] })
+  }
+
   const depositMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
       adminService.depositAction(id, { action }),
-    onSuccess: (_, vars) => {
-      toast.success(`Deposit ${vars.action === 'approve' ? 'approved' : 'rejected'}`)
+    onSuccess: (res, vars) => {
+      toast.success(res.data?.message || `Deposit ${vars.action === 'approve' ? 'approved' : 'rejected'}`)
       qc.invalidateQueries({ queryKey: ['admin-deposits'] })
       qc.invalidateQueries({ queryKey: ['admin-stats'] })
+      qc.invalidateQueries({ queryKey: ['admin-users'] })   // wallet balances changed
+      refreshEmailHealth()                                  // the user was just emailed
     },
   })
 
   const withdrawalMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
       adminService.withdrawalAction(id, { action }),
-    onSuccess: (_, vars) => {
-      toast.success(`Withdrawal ${vars.action === 'approve' ? 'approved' : 'rejected'}`)
+    onSuccess: (res, vars) => {
+      toast.success(res.data?.message || `Withdrawal ${vars.action === 'approve' ? 'approved' : 'rejected'}`)
       qc.invalidateQueries({ queryKey: ['admin-withdrawals'] })
       qc.invalidateQueries({ queryKey: ['admin-stats'] })
+      qc.invalidateQueries({ queryKey: ['admin-users'] })   // a rejection refunds the wallet
+      refreshEmailHealth()
     },
   })
 
@@ -90,14 +111,23 @@ export default function AdminPage() {
       toast.success(vars.message ? 'Support reply sent' : 'Support ticket status updated')
       setSupportReplies(prev => ({ ...prev, [vars.id]: '' }))
       qc.invalidateQueries({ queryKey: ['admin-support-tickets'] })
+      refreshEmailHealth()                                  // replying/closing emails the user
     }
   })
   
   // Broadcast state
   const [broadcast, setBroadcast] = useState({ subject: '', message: '', target: 'all' })
+  const [lastBroadcast, setLastBroadcast] = useState<{ total: number; sent: number; failed: number } | null>(null)
   const broadcastMutation = useMutation({
     mutationFn: () => adminService.broadcast(broadcast),
-    onSuccess: (res) => { toast.success(res.data.message); setBroadcast({ subject: '', message: '', target: 'all' }) },
+    onSuccess: (res) => {
+      const result = res.data.data
+      setLastBroadcast(result)
+      if (result && result.failed > 0) toast.error(res.data.message, { duration: 8000 })
+      else toast.success(res.data.message)
+      setBroadcast({ subject: '', message: '', target: 'all' })
+      refreshEmailHealth()
+    },
   })
 
   const tabs: { key: AdminTab; label: string; icon: any }[] = [
@@ -108,6 +138,7 @@ export default function AdminPage() {
     { key: 'plans',       label: 'Plans',       icon: TrendingUp },
     { key: 'support',     label: 'Support',     icon: LifeBuoy },
     { key: 'broadcast',   label: 'Broadcast',   icon: Megaphone },
+    { key: 'email',       label: 'Email',       icon: Mail },
   ]
 
   return (
@@ -130,6 +161,12 @@ export default function AdminPage() {
               tab === key ? 'bg-gold-500/10 text-gold-400 border border-gold-500/20' : 'text-dark-400 hover:text-white'
             }`}>
             <Icon size={15} />{label}
+            {key === 'email' && failedEmails > 0 && (
+              <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-300">{failedEmails}</span>
+            )}
+            {key === 'email' && failedEmails === 0 && emailWarnings.length > 0 && (
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+            )}
           </button>
         ))}
       </div>
@@ -137,6 +174,26 @@ export default function AdminPage() {
       {/* Overview */}
       {tab === 'overview' && (
         <div>
+          {emailNeedsAttention && (
+            <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={18} className="mt-0.5 shrink-0 text-amber-400" />
+                <div className="text-sm">
+                  <p className="font-semibold text-amber-200">
+                    {failedEmails > 0
+                      ? `${failedEmails} email${failedEmails > 1 ? 's' : ''} failed to send in the last 24 hours`
+                      : 'Email setup needs attention'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-amber-200/80">
+                    {emailHealth?.summary.last_failure_hint || emailWarnings[0] || 'Open the Email tab for details.'}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setTab('email')} className="shrink-0 rounded-lg border border-amber-500/30 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:bg-amber-500/10">
+                View email health
+              </button>
+            </div>
+          )}
           {statsLoading ? (
             <div className="flex items-center justify-center py-16"><Loader2 size={24} className="animate-spin text-gold-400" /></div>
           ) : stats && (
@@ -388,8 +445,22 @@ export default function AdminPage() {
             className="bg-gold-gradient text-dark-950 font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50">
             {broadcastMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <><Megaphone size={16} /> Send Broadcast</>}
           </button>
+
+          {lastBroadcast && (
+            <div className={`rounded-xl border p-4 text-sm ${lastBroadcast.failed > 0 ? 'border-amber-500/25 bg-amber-500/5 text-amber-100' : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200'}`}>
+              Last broadcast: <strong>{lastBroadcast.sent}</strong> of {lastBroadcast.total} emails sent
+              {lastBroadcast.failed > 0 && (
+                <>, <strong>{lastBroadcast.failed}</strong> failed.{' '}
+                  <button onClick={() => setTab('email')} className="font-semibold underline">View failed emails</button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
+
+      {/* Email health */}
+      {tab === 'email' && <EmailHealthPanel />}
     </DashboardLayout>
   )
 }

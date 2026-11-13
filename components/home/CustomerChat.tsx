@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 
 const imStatus = '1' // 1 for WhatsApp, 2 for Telegram
-const whatsappNumber = '13042394829'
+const whatsappNumber = '15042149302'
 const telegramUser = 'scripted'
 const activeLiveChat = 'smartsupp'
 

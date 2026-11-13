@@ -1,3 +1,4 @@
+import { number } from 'zod'
 import { api, unwrap, ApiResponse } from './api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -110,11 +111,13 @@ export interface SupportTicket {
   id: string
   subject: string
   category: 'account' | 'deposit' | 'withdrawal' | 'investment' | 'other'
-  priority: 'low' | 'medium' | 'high'
-  status: 'open' | 'closed' | 'pending'
+  priority: 'low' | 'normal' | 'high'
+  status: 'open' | 'answered' | 'closed' 
   messages: TicketMessage[]
   created_at: string
   updated_at: string
+  user_email?: string
+  user_name?: string
 }
 
 export interface DashboardSummary {
@@ -126,14 +129,65 @@ export interface DashboardSummary {
   active_investments: number
   completed_investments: number
   pending_deposits: number
+  pending_deposit_amount: number
   pending_withdrawals: number
   referral_count: number
+}
+
+// ── Email health ──────────────────────────────────────────────────────────────
+/** What a normal user sees about their own emails (no technical details). */
+export interface UserEmailStatus {
+  emails: { id: string; subject: string; status: 'sent' | 'failed'; created_at: string }[]
+  /** Recent account emails that could not be delivered (last 7 days). */
+  failed_count: number
+}
+
+export interface EmailLogEntry {
+  id: string
+  recipient: string
+  user_email: string | null
+  subject: string
+  template: string
+  status: 'sent' | 'failed'
+  error: string
+  attempts: number
+  retryable: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface EmailConfigReport {
+  backend: string
+  host: string
+  port: number | null
+  use_tls: boolean | null
+  use_ssl: boolean
+  timeout_seconds: number | null
+  smtp_user: string
+  password_set: boolean
+  from_email: string
+  admin_recipients: string[]
+  frontend_url: string
+  warnings: string[]
+}
+
+export interface AdminEmailOverview {
+  summary: {
+    sent_24h: number
+    failed_24h: number
+    failed_total: number
+    last_failure_at: string | null
+    last_failure_error: string | null
+    last_failure_hint: string
+  }
+  config: EmailConfigReport
+  logs: EmailLogEntry[]
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authService = {
   register: (data: { email: string; first_name: string; last_name: string; phone?: string; country?: string; password: string; password2: string; referral_code?: string }) =>
-    api.post<ApiResponse<{ email: string }>>('/auth/register/', data),
+    api.post<ApiResponse<{ email: string; email_sent?: boolean }>>('/auth/register/', data),
 
   login: (data: { email: string; password: string }) =>
     api.post<ApiResponse<{ user: User; access: string; refresh: string }>>('/auth/login/', data),
@@ -222,7 +276,7 @@ export const supportService = {
     api.get<ApiResponse<SupportTicket[]>>('/support/tickets/', { params }),
   
   createTicket: (data: { subject: string; category: SupportTicket['category']; priority: SupportTicket['priority']; message: string }) =>
-    api.post<ApiResponse<SupportTicket>>('/support/tickets/create/', data),
+    api.post<ApiResponse<SupportTicket>>('/support/tickets/', data),
 
   getTicket: (id: string) =>
     api.get<ApiResponse<SupportTicket>>(`/support/tickets/${id}/`),
@@ -244,6 +298,9 @@ export const notificationService = {
 
   markRead: (id: string) =>
     api.patch(`/notifications/${id}/read/`),
+
+  getEmailStatus: () =>
+    api.get<ApiResponse<UserEmailStatus>>('/notifications/email-log'),
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
@@ -291,11 +348,21 @@ export const adminService = {
     api.delete(`/admin/plans/${id}/`),
 
   broadcast: (data: { subject: string; message: string; target: string }) =>
-    api.post('/admin/broadcast/', data),
+    api.post<ApiResponse<{ total: number; sent: number; failed: number }>>('/admin/broadcast/', data),
 
-  getSupportTickets: (params?: any) =>
-    api.get('/admin/support-tickets/', { params }),
+  getSupportTickets: (params?: { status?: string }) =>
+    api.get<ApiResponse<SupportTicket[]>>('/support/admin/tickets/', { params }),
 
-  supportTicketAction: (id: string, data: {status?: 'open' | 'answered' | 'closed'; message?: string}) =>
-    api.post(`/support/admin/tickets/${id}/action/`, data),
+  supportTicketAction: (id: string, data: { status?: SupportTicket['status']; message?: string }) =>
+    api.post<ApiResponse<SupportTicket>>(`/support/admin/tickets/${id}/action/`, data),
+
+  // Email health: delivery log, retry a failed email, send a test email
+  getEmailLogs: (params?: { status?: 'sent' | 'failed'; search?: string; limit?: number }) =>
+    api.get<ApiResponse<AdminEmailOverview>>('/admin/email-logs/', { params }),
+
+  retryEmail: (id: string) =>
+    api.post<ApiResponse<EmailLogEntry>>(`/admin/email-logs/${id}/retry/`),
+
+  sendTestEmail: (to?: string) =>
+    api.post<ApiResponse<null>>('/admin/email-test/', to ? { to } : {}),
 }

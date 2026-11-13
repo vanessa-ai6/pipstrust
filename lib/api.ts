@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import Cookies from 'js-cookie'
+import { refresh } from 'next/cache'
 import toast from 'react-hot-toast'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -10,12 +11,26 @@ export const api = axios.create({
   timeout: 30000,
 })
 
+// ── Endpoints that are used while logged out ──────────────────────────────────
+// The server answers 401 here for a *wrong password*, not for an expired session.
+// Treating that as "token expired" caused a page reload to /auth/login and the
+// "Invalid email or password" message was never shown.
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login/',
+  '/auth/register/',
+  '/auth/otp/',
+  '/auth/password/reset/',
+  '/auth/token/refresh/',
+]
+const isPublicAuthRequest = (url?: string) =>
+  !!url && PUBLIC_AUTH_PATHS.some(path => url.includes(path)) 
+
 // ── Attach access token to every request ──────────────────────────────────────
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = Cookies.get('access_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+// api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+//   const token = Cookies.get('access_token')
+//   if (token) config.headers.Authorization = `Bearer ${token}`
+//   return config
+// })
 
 // ── Handle token refresh on 401 ───────────────────────────────────────────────
 let isRefreshing = false
@@ -29,9 +44,11 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined
+    const status = error.response?.status
+    const publicAuthRequest = isPublicAuthRequest(originalRequest?.url)
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (originalRequest && status === 401 && !originalRequest._retry && !publicAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -54,7 +71,13 @@ api.interceptors.response.use(
       try {
         const { data } = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh: refreshToken })
         const newAccess = data.data?.access || data.access
+        // The server rotates refresh tokens: it returns a NEW one and blacklists the old.
+        // If we keep the old one, the next refresh fails and the user is logged out.
+        const newRefresh = data.data?.refresh || data.refresh
         Cookies.set('access_token', newAccess, { expires: 1, secure: true, sameSite: 'strict' })
+        if (newRefresh) {
+          Cookies.set('refresh_token', newRefresh, { expires: 7, secure: true, sameSite: 'strict' })
+        }
         api.defaults.headers.common.Authorization = `Bearer ${newAccess}`
         processQueue(null, newAccess)
         originalRequest.headers.Authorization = `Bearer ${newAccess}`
@@ -68,9 +91,11 @@ api.interceptors.response.use(
       }
     }
 
-    // Show error toast for non-401 errors
+    // Show the server's message for every error, except a 401 on a protected request
+    // (that case is an expired session and is handled by the redirect above).
     const message = (error.response?.data as any)?.message
-    if (error.response?.status !== 401 && message) {
+    const isSessionExpiry = status === 401 && !publicAuthRequest
+    if (isSessionExpiry && message) {
       toast.error(message)
     }
 

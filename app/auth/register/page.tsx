@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import toast from 'react-hot-toast'
 import { Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react'
 import { authService } from '@/lib/services'
+import Logo from '@/components/Logo'
 
 const schema = z.object({
   first_name: z.string().min(1, 'First name is required'),
@@ -55,12 +56,7 @@ export default function RegisterPage() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-gold-500/5 rounded-full blur-3xl" />
         </div>
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gold-gradient flex items-center justify-center">
-            <span className="text-dark-950 font-display font-bold">P</span>
-          </div>
-          <span className="font-display font-bold text-xl text-white">PipsTrust</span>
-        </Link>
+        <Logo />
         <div>
           <h2 className="text-3xl font-display font-bold text-white mb-6">Start your investment journey today.</h2>
           <ul className="space-y-4">
@@ -80,12 +76,7 @@ export default function RegisterPage() {
       {/* Right */}
       <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
         <div className="w-full max-w-lg py-8">
-          <Link href="/" className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center">
-              <span className="text-dark-950 font-bold text-sm">P</span>
-            </div>
-            <span className="font-display font-bold text-white">PipsTrust</span>
-          </Link>
+          <Logo className="lg:hidden mb-8" />
 
           <div className="mb-8">
             <h1 className="text-3xl font-display font-bold text-white mb-2">Create your account</h1>

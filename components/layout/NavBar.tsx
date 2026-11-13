@@ -2,6 +2,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Logo from '@/components/Logo'
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,12 +14,7 @@ export default function NavBar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-dark-800/50 bg-dark-950/80 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center">
-            <span className="text-dark-950 font-display font-bold text-sm">P</span>
-          </div>
-          <span className="font-display font-bold text-xl">PipsTrust</span>
-        </Link>
+        <Logo />
 
         <button
           onClick={() => setIsOpen((state) => !state)}

@@ -13,6 +13,7 @@ import {
 import toast from 'react-hot-toast'
 import { authService } from '@/lib/services'
 import Cookies from 'js-cookie'
+import Logo from '@/components/DashLogo'
 
 const userNav = [
   { label: 'Dashboard',    href: '/dashboard',     icon: LayoutDashboard },
@@ -61,12 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}>
         {/* Logo */}
         <div className="flex items-center justify-between px-6 h-16 border-b border-dark-700">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center">
-              <span className="text-dark-950 font-display font-bold text-sm">P</span>
-            </div>
-            <span className="font-display font-bold text-white text-lg">PipsTrust</span>
-          </Link>
+          <Logo />
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-dark-400 hover:text-white">
             <X size={18} />
           </button>

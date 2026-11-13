@@ -1,6 +1,7 @@
 'use client'
 
 import Link from "next/link"
+import Logo from '@/components/Logo'
 
 export default function Footer() {
   return (
@@ -9,12 +10,7 @@ export default function Footer() {
          <div className="grid md:grid-cols-4 gap-8">
             {/* Company Info */}
             <div>
-               <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-gold-gradient flex items-center justify-center">
-                     <span className="text-dark-950 font-bold text-xs">P</span>
-                  </div>
-                  <span className="font-display font-bold">PipsTrust</span>
-               </div>
+               <Logo />
                <p className="text-gray-400">
                   Your trusted investment platform for growing wealth securely.
                </p>
@@ -69,13 +65,13 @@ export default function Footer() {
                <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
                <ul className="space-y-2 text-gray-400">
                <li>Email: support@pipstrust.com</li>
-               <li>Phone: +1 (555) 123-4567</li>
+               <li>Phone: +1 (504) 214-9302</li>
                </ul>
             </div>
          </div>
 
          <div className="border-t border-dark-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 FirePips. All rights reserved.</p>
+            <p>&copy; 2024 PipsTrust. All rights reserved.</p>
          </div>
          </div>
       </footer>

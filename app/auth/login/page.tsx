@@ -10,6 +10,8 @@ import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { authService } from '@/lib/services'
 import { useAuthStore } from '@/lib/store'
 import { setAuthTokens } from '@/lib/api'
+import Logo from '@/components/Logo'
+
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -56,12 +58,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/3 -left-20 w-72 h-72 bg-gold-500/5 rounded-full blur-3xl" />
         </div>
-        <Link href="/" className="flex items-center gap-2 relative">
-          <div className="w-9 h-9 rounded-xl bg-gold-gradient flex items-center justify-center">
-            <span className="text-dark-950 font-display font-bold">P</span>
-          </div>
-          <span className="font-display font-bold text-xl text-white">PipsTrust</span>
-        </Link>
+        <Logo />
         <div className="relative">
           <blockquote className="text-2xl font-display font-bold text-white leading-snug mb-4">
             "The best investment you can make is in yourself and your financial future."
@@ -81,12 +78,7 @@ export default function LoginPage() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <Link href="/" className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-gold-gradient flex items-center justify-center">
-              <span className="text-dark-950 font-bold text-sm">P</span>
-            </div>
-            <span className="font-display font-bold text-white">PipsTrust</span>
-          </Link>
+          <Logo className="lg:hidden mb-8" />
 
           <div className="mb-8">
             <h1 className="text-3xl font-display font-bold text-white mb-2">Welcome back</h1>

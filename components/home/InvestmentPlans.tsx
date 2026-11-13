@@ -115,7 +115,7 @@ export const InvestmentPlans = () => {
                            <div className="text-lg font-semibold">{plan.min}</div>
                         </div>
                         <Link href="/auth/login" className="flex items-center gap-3">
-                           <Button variant={plan.popular ? 'default' : 'outline'}>Start Now</Button>
+                           <Button variant={plan.popular ? 'default' : 'outline'}>Invest Now</Button>
                         </Link>
                      </CardFooter>
                   </Card>

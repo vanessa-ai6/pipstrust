@@ -45,7 +45,7 @@ export function getPaymentMethodLabel(method: string) {
     bitcoin:       'Bitcoin (BTC)',
     ethereum:      'Ethereum (ETH)',
     usdt:          'USDT (TRC20)',
-    usdt2:          'USDT (ETH20)',
+    usdt2:          'USDT (ERC20)',
   }
   return map[method] || method
 }

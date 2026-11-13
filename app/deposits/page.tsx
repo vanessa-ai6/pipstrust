@@ -11,14 +11,14 @@ const WALLET_ADDRESSES: Record<string, { address: string; network: string }> = {
   bitcoin:  { address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh', network: 'Bitcoin Network' },
   ethereum: { address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F', network: 'ERC20' },
   usdt:     { address: 'TN3W4H6rK2ce4vX9YnFQHwKx6Le9XszaUk', network: 'TRC20' },
-  usdt2:     { address: 'TN3W4H6rK2ce4vX9YnFQHwKx6Le9XszaUk', network: 'ETH20' },
+  usdt2:     { address: 'TN3W4H6rK2ce4vX9YnFQHwKx6Le9XszaUk', network: 'ERC20' },
 }
 
 const METHODS = [
   { value: 'bitcoin', label: 'Bitcoin (BTC)' },
   { value: 'ethereum', label: 'Ethereum (ETH)' },
   { value: 'usdt', label: 'USDT (TRC20)' },
-  { value: 'usdt2', label: 'USDT (ETH20)' },
+  { value: 'usdt2', label: 'USDT (ERC20)' },
 ]
 
 export default function DepositsPage() {
@@ -125,6 +125,10 @@ export default function DepositsPage() {
             </div>
 
             <div className="space-y-4">
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Status: Pending</p>
+                <p className="mt-1 text-xs text-dark-400">Your deposit stays pending until an administrator confirms the payment. Confirmed deposits are added to Wallet Balance.</p>
+              </div>
               {/* Method */}
               <div>
                 <label className="block text-sm font-medium text-dark-200 mb-2">Payment Method</label>
