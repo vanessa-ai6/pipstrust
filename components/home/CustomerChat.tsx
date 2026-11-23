@@ -1,11 +1,20 @@
+
 'use client'
 
 import { useEffect } from 'react'
 
-const imStatus = '1' // 1 for WhatsApp, 2 for Telegram
-const whatsappNumber = '15042149302'
+type LiveChatProvider =
+  | 'smartsupp'
+  | 'crisp'
+  | 'tidio'
+  | 'chatify'
+  | 'jivochat'
+  | 'none'
+
+const imStatus = '1'
+const whatsappNumber = '1502'
 const telegramUser = 'scripted'
-const activeLiveChat = 'smartsupp'
+const activeLiveChat: LiveChatProvider = 'smartsupp'
 
 function appendExternalScript(src: string) {
   const script = document.createElement('script')
@@ -23,8 +32,13 @@ function appendInlineScript(code: string) {
   return script
 }
 
-function createChatButton(href: string, label: string, background: string) {
+function createChatButton(
+  href: string,
+  label: string,
+  background: string
+) {
   const button = document.createElement('a')
+
   button.href = href
   button.target = '_blank'
   button.rel = 'noopener noreferrer'
@@ -40,7 +54,9 @@ function createChatButton(href: string, label: string, background: string) {
   button.style.fontWeight = '600'
   button.style.zIndex = '9999'
   button.style.boxShadow = '0 16px 32px rgba(0, 0, 0, 0.18)'
+
   document.body.appendChild(button)
+
   return button
 }
 
@@ -71,17 +87,26 @@ export default function CustomerChat() {
           )
         )
         break
+
       case 'smartsupp':
         scripts.push(
           appendInlineScript(
             'window._smartsupp = window._smartsupp || {}; window._smartsupp.key = "8ac5a820b21473729ac0aadfa1685fa4e73e7441";'
           )
         )
-        scripts.push(appendExternalScript('https://www.smartsuppchat.com/loader.js'))
+        scripts.push(
+          appendExternalScript(
+            'https://www.smartsuppchat.com/loader.js'
+          )
+        )
         break
+
       case 'tidio':
-        scripts.push(appendExternalScript('//code.tidio.co/keyxx.js'))
+        scripts.push(
+          appendExternalScript('//code.tidio.co/keyxx.js')
+        )
         break
+
       case 'chatify':
         scripts.push(
           appendInlineScript(
@@ -89,9 +114,16 @@ export default function CustomerChat() {
           )
         )
         break
+
       case 'jivochat':
-        scripts.push(appendExternalScript('//code.jivosite.com/script/widget/keyxx'))
+        scripts.push(
+          appendExternalScript(
+            '//code.jivosite.com/script/widget/keyxx'
+          )
+        )
         break
+
+      case 'none':
       default:
         break
     }
@@ -100,6 +132,7 @@ export default function CustomerChat() {
       if (chatButton?.parentNode) {
         chatButton.parentNode.removeChild(chatButton)
       }
+
       scripts.forEach((script) => {
         if (script.parentNode) {
           script.parentNode.removeChild(script)

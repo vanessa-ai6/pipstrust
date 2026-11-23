@@ -101,96 +101,95 @@ export default function HowItWorks() {
         </div>
       </div>
 
+      
       <section
-      className="relative py-16 px-6 overflow-hidden"
+        className="relative py-16 px-4 sm:px-6 overflow-hidden"
         style={{ backgroundColor: '#10b981' }}
-    >
-      {/* Dot grid background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
-      />
+      >
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+          }}
+        />
 
-      {/* Heading */}
-      <div className="text-center mb-14 relative">
-        <h2 className="text-3xl md:text-4xl font-bold text-white leading-snug">
-          Three Simple Steps To Start<br />Earning
-        </h2>
-      </div>
+        {/* Heading */}
+        <div className="relative text-center mb-14">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-snug">
+            Three Simple Steps To Start
+            <br />
+            Earning
+          </h2>
+        </div>
 
-      {/* Steps row */}
-      <div className="relative flex items-center justify-center max-w-4xl mx-auto">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center">
-            {/* Circle card */}
-            <div className="flex flex-col items-center">
-              <div
-                className="relative bg-white rounded-full flex flex-col items-center justify-center text-center shadow-lg gap-1.5"
-                style={{ width: 250, height: 250, padding: '24px' }}
-              >
+        {/* Steps */}
+        <div className="relative flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-6 max-w-5xl mx-auto">
+          {steps.map((step, index) => (
+            <div
+              key={step.number}
+              className="relative flex flex-col items-center w-full max-w-[260px] shrink-0"
+            >
+              {/* Circle card */}
+              <div className="relative w-[230px] h-[230px] sm:w-[250px] sm:h-[250px] bg-white rounded-full flex items-center justify-center p-5 shadow-xl">
+
                 {/* Number badge */}
                 <span
-                  className="absolute -top-0 right-6 w-9 h-9 rounded-full text-white text-sm font-bold flex items-center justify-center"
+                  className="absolute top-3 right-5 w-9 h-9 rounded-full text-white text-sm font-bold flex items-center justify-center z-10"
                   style={{ backgroundColor: '#10b981' }}
                 >
                   {step.number}
                 </span>
 
-                <div className="w-50 h-50 rounded-full border-4 border-teal-500 flex flex-col items-center justify-center p-6 gap-2 hover:border-r-emerald-500">
-                  {/* Icon placeholder — swap with Lucide icon */}
-                  <div
-                    className="text-2xl font-bold mb-1"
-                    style={{ color: '#10b981' }}
-                  >
+                {/* Inner circle */}
+                <div className="w-full h-full rounded-full border-4 border-teal-500 flex flex-col items-center justify-center text-center p-5 gap-2 transition-colors hover:border-emerald-500">
+
+                  {/* Icon */}
+                  <div style={{ color: '#10b981' }}>
                     {step.icon}
                   </div>
 
                   {/* Title */}
                   <p
-                    className="text-xs font-extrabold uppercase tracking-wide leading-tight text-[#1a1a2e]"
+                    className="text-sm sm:text-base font-extrabold uppercase tracking-wide leading-tight text-[#1a1a2e]"
                     style={{ whiteSpace: 'pre-line' }}
                   >
                     {step.title}
                   </p>
 
-                  {/* Description inside circle */}
-                  <p className="text-[11px] text-gray-500 leading-snug max-w-[138px]">
+                  {/* Description */}
+                  <p className="text-[11px] sm:text-xs text-gray-500 leading-snug max-w-[165px]">
                     {step.description}
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* Dashed arrow connector */}
-            {index < steps.length - 1 && (
-              <div
-                className="flex items-center shrink-0 -mt-16"
-                style={{ width: 90 }}
-              >
-                <div
-                  className="flex-1 border-t-2 border-dashed"
-                  style={{ borderColor: 'rgba(255,255,255,0.45)' }}
-                />
-                {/* Arrowhead */}
-                <div
-                  style={{
-                    width: 0,
-                    height: 0,
-                    borderTop: '7px solid transparent',
-                    borderBottom: '7px solid transparent',
-                    borderLeft: '10px solid rgba(255,255,255,0.6)',
-                  }}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
+              {/* Direction connector */}
+              {index < steps.length - 1 && (
+                <div className="absolute top-full mt-3 lg:mt-0 lg:top-1/2 lg:-right-9 lg:-translate-y-1/2 flex flex-col lg:flex-row items-center justify-center h-8 lg:h-auto lg:w-12 z-10">
+
+                  {/* Dashed line */}
+                  <div className="h-full lg:h-0 lg:w-full border-l-2 lg:border-l-0 lg:border-t-2 border-dashed border-white/60" />
+
+                  {/* Arrowhead */}
+                  <div
+                    className="w-0 h-0 -mt-px lg:mt-0 lg:-ml-px"
+                    style={{
+                      borderLeft: '7px solid transparent',
+                      borderRight: '7px solid transparent',
+                      borderTop: '9px solid rgba(255,255,255,0.75)',
+                    }}
+                  >
+                    <span className="hidden"> </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   )
 }
