@@ -12,7 +12,7 @@ type LiveChatProvider =
   | 'none'
 
 const imStatus = '1'
-const whatsappNumber = '1502'
+const whatsappNumber = '15042149302'
 const telegramUser = 'scripted'
 const activeLiveChat: LiveChatProvider = 'smartsupp'
 
