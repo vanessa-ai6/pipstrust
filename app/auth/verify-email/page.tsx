@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { Suspense, useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -8,7 +8,7 @@ import { authService } from '@/lib/services'
 import { useAuthStore } from '@/lib/store'
 import { setAuthTokens } from '@/lib/api'
 
-export default function VerifyEmailPage() {
+export function VerifyEmailForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get('email') || ''
@@ -149,5 +149,19 @@ export default function VerifyEmailPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          Loading email verification...
+        </div>
+      }
+    >
+      <VerifyEmailForm />
+    </Suspense>
   )
 }
