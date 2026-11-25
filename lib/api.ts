@@ -3,12 +3,7 @@ import Cookies from 'js-cookie'
 import { refresh } from 'next/cache'
 import toast from 'react-hot-toast'
 
-const API_URL = 
-  process.env.NEXT_PUBLIC_API_URL || 
-  (process.env.NODE_ENV === "development"
-    ? 'http://localhost:8000/api'
-    : "https://pipstrust-api.onrender.com/api"
-  )
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 export const api = axios.create({
   baseURL: API_URL,
